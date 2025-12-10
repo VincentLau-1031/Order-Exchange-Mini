@@ -1,19 +1,18 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
-Route::get('/health', fn () => ['status' => 'ok']);
-
-<?php
-
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\ProfileController;
 use App\Http\Controllers\API\OrderController;
 
+// Health check
+Route::get('/health', fn () => ['status' => 'ok']);
+
+// Public auth routes
 Route::post('/login', [AuthController::class, 'login'])->name('api.login');
 Route::post('/register', [AuthController::class, 'register'])->name('api.register');
 
+// Protected routes (Sanctum)
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('api.logout');
 
@@ -25,5 +24,4 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/orders/{id}/cancel', [OrderController::class, 'cancel'])->name('api.orders.cancel');
     });
 });
-
 
