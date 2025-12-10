@@ -100,6 +100,7 @@ import api from '../services/api';
 const selectedSymbol = ref('BTC');
 const orders = ref([]);
 const loading = ref(false);
+let refreshTimer = null;
 
 const formatCurrency = (value) => {
     return parseFloat(value || 0).toLocaleString('en-US', {
@@ -143,12 +144,34 @@ const loadOrderbook = async () => {
 onMounted(() => {
     loadOrderbook();
     // Refresh orderbook every 5 seconds
-    setInterval(loadOrderbook, 5000);
+    refreshTimer = setInterval(loadOrderbook, 5000);
 });
 
 // Watch for symbol changes
 watch(selectedSymbol, () => {
     loadOrderbook();
+});
+
+// Handle real-time order matched events (optional integration hook)
+const handleOrderMatched = (event) => {
+    const filledIds = [];
+    if (event.buy_order) filledIds.push(event.buy_order.id);
+    if (event.sell_order) filledIds.push(event.sell_order.id);
+    if (filledIds.length === 0) return;
+
+    // Remove filled orders from local orderbook
+    orders.value = orders.value.filter((o) => !filledIds.includes(o.id));
+};
+
+// Expose a hook so parent can push real-time updates
+defineExpose({
+    handleOrderMatched,
+});
+
+onUnmounted(() => {
+    if (refreshTimer) {
+        clearInterval(refreshTimer);
+    }
 });
 </script>
 

@@ -30,7 +30,7 @@
 
                 <!-- Center Column: Orderbook -->
                 <div class="lg:col-span-1">
-                    <Orderbook :key="orderbookKey" />
+                    <Orderbook :key="orderbookKey" ref="orderbookRef" />
                 </div>
 
                 <!-- Right Column: Wallet & Orders -->
@@ -44,7 +44,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '../composables/useAuth';
 import { usePusher } from '../composables/usePusher';
@@ -56,10 +56,12 @@ import Orderbook from '../components/Orderbook.vue';
 
 const router = useRouter();
 const { user, logout, fetchProfile } = useAuth();
-const { listenToOrderMatched } = usePusher();
+const { listenToOrderMatched, cleanup } = usePusher();
 const { fetchOrders, updateOrder } = useOrders();
 
 const orderbookKey = ref(0);
+const orderbookRef = ref(null);
+let unsubscribe = null;
 
 const handleLogout = async () => {
     await logout();
@@ -75,24 +77,44 @@ const handleOrderCreated = () => {
     fetchProfile();
 };
 
-// Set up Pusher listener for order matched events
-onMounted(() => {
-    if (user.value?.id) {
-        listenToOrderMatched(user.value.id, (event) => {
-            // Update order status if it's one of our orders
-            if (event.buy_order) {
-                updateOrder(event.buy_order.id, { status: event.buy_order.status });
-            }
-            if (event.sell_order) {
-                updateOrder(event.sell_order.id, { status: event.sell_order.status });
-            }
-
-            // Refresh data
-            fetchProfile();
-            fetchOrders();
-            orderbookKey.value++; // Refresh orderbook
-        });
+const handleMatchedEvent = (event) => {
+    // Update order status if it's one of our orders
+    if (event.buy_order) {
+        updateOrder(event.buy_order.id, { status: event.buy_order.status });
     }
+    if (event.sell_order) {
+        updateOrder(event.sell_order.id, { status: event.sell_order.status });
+    }
+
+    // Refresh data
+    fetchProfile();
+    fetchOrders();
+    orderbookKey.value++; // Refresh orderbook
+
+    // Push real-time removal to orderbook component
+    orderbookRef.value?.handleOrderMatched?.(event);
+};
+
+// Subscribe when user is ready
+watch(user, (u) => {
+    if (unsubscribe) {
+        unsubscribe();
+        unsubscribe = null;
+    }
+    if (u?.id) {
+        const channel = listenToOrderMatched(u.id, handleMatchedEvent);
+        // Track unsubscribe
+        unsubscribe = () => {
+            channel && channel.stopListening('.order.matched');
+        };
+    }
+}, { immediate: true });
+
+onUnmounted(() => {
+    if (unsubscribe) {
+        unsubscribe();
+    }
+    cleanup();
 });
 </script>
 

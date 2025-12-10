@@ -8,6 +8,26 @@ export function usePusher() {
     const channels = ref([]);
 
     /**
+     * Track Echo connection state (optional, useful for UI/debug)
+     */
+    const trackConnection = () => {
+        const connection = window.Echo?.connector?.pusher?.connection;
+        if (!connection) {
+            return;
+        }
+
+        const setState = (state) => {
+            isConnected.value = state === 'connected';
+        };
+
+        setState(connection.state);
+
+        connection.bind('state_change', ({ current }) => {
+            setState(current);
+        });
+    };
+
+    /**
      * Subscribe to a private channel
      */
     const subscribe = (channelName, eventName, callback) => {
@@ -17,7 +37,7 @@ export function usePusher() {
         }
 
         const channel = window.Echo.private(channelName);
-        
+
         channel.listen(eventName, callback);
 
         channels.value.push({ name: channelName, channel });
@@ -29,16 +49,15 @@ export function usePusher() {
      * Unsubscribe from a channel
      */
     const unsubscribe = (channelName) => {
-        const index = channels.value.findIndex(c => c.name === channelName);
+        const index = channels.value.findIndex((c) => c.name === channelName);
         if (index !== -1) {
-            const { channel } = channels.value[index];
             window.Echo?.leave(channelName);
             channels.value.splice(index, 1);
         }
     };
 
     /**
-     * Listen for order matched events
+     * Listen for order matched events on private-user.{id}
      */
     const listenToOrderMatched = (userId, callback) => {
         return subscribe(`user.${userId}`, '.order.matched', callback);
@@ -53,6 +72,10 @@ export function usePusher() {
         });
         channels.value = [];
     };
+
+    onMounted(() => {
+        trackConnection();
+    });
 
     // Cleanup on unmount
     onUnmounted(() => {
