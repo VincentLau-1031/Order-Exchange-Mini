@@ -27,12 +27,20 @@ class OrderController extends Controller
     {
         $user = $request->user();
 
-        $query = Order::query()
-            ->where('user_id', $user->id)
-            ->when($request->filled('symbol'), fn ($q) => $q->where('symbol', strtoupper($request->string('symbol'))))
-            ->when($request->filled('status'), fn ($q) => $q->where('status', (int) $request->status))
-            ->when($request->filled('side'), fn ($q) => $q->where('side', strtolower($request->side)))
-            ->orderByDesc('created_at');
+        if ($request->boolean('orderbook')) {
+            $query = Order::query()
+                ->where('status', Order::STATUS_OPEN)
+                ->when($request->filled('symbol'), fn ($q) => $q->where('symbol', strtoupper($request->string('symbol'))))
+                ->when($request->filled('side'), fn ($q) => $q->where('side', strtolower($request->side)))
+                ->orderBy('created_at');
+        } else {
+            $query = Order::query()
+                ->where('user_id', $user->id)
+                ->when($request->filled('symbol'), fn ($q) => $q->where('symbol', strtoupper($request->string('symbol'))))
+                ->when($request->filled('status'), fn ($q) => $q->where('status', (int) $request->status))
+                ->when($request->filled('side'), fn ($q) => $q->where('side', strtolower($request->side)))
+                ->orderByDesc('created_at');
+        }
 
         return response()->json($query->get());
     }
