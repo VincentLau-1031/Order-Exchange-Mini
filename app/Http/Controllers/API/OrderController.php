@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreOrderRequest;
 use App\Models\Order;
 use App\Services\OrderService;
+use App\Services\MatchingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,8 @@ use RuntimeException;
 class OrderController extends Controller
 {
     public function __construct(
-        private readonly OrderService $orderService
+        private readonly OrderService $orderService,
+        private readonly MatchingService $matchingService
     ) {
     }
 
@@ -45,6 +47,8 @@ class OrderController extends Controller
 
         try {
             $order = $this->orderService->createOrder($user, $data);
+            // Attempt to match immediately
+            $this->matchingService->matchOrder($order);
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         } catch (\Throwable $e) {
