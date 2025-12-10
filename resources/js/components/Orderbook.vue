@@ -94,7 +94,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import api from '../services/api';
 
 const selectedSymbol = ref('BTC');
@@ -132,7 +132,7 @@ const asks = computed(() => {
 const loadOrderbook = async () => {
     loading.value = true;
     try {
-        const response = await api.get(`/orders?symbol=${selectedSymbol.value}`);
+        const response = await api.get(`/orders?symbol=${selectedSymbol.value}&orderbook=1`);
         orders.value = response.data;
     } catch (error) {
         console.error('Failed to load orderbook:', error);
@@ -143,7 +143,6 @@ const loadOrderbook = async () => {
 
 onMounted(() => {
     loadOrderbook();
-    // Refresh orderbook every 5 seconds
     refreshTimer = setInterval(loadOrderbook, 5000);
 });
 
@@ -152,14 +151,12 @@ watch(selectedSymbol, () => {
     loadOrderbook();
 });
 
-// Handle real-time order matched events (optional integration hook)
 const handleOrderMatched = (event) => {
     const filledIds = [];
     if (event.buy_order) filledIds.push(event.buy_order.id);
     if (event.sell_order) filledIds.push(event.sell_order.id);
     if (filledIds.length === 0) return;
 
-    // Remove filled orders from local orderbook
     orders.value = orders.value.filter((o) => !filledIds.includes(o.id));
 };
 

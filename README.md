@@ -29,6 +29,14 @@ PUSHER_APP_KEY=your_app_key
 PUSHER_APP_SECRET=your_app_secret
 PUSHER_APP_CLUSTER=your_cluster
 
+# Frontend Pusher configuration (required for real-time features)
+VITE_PUSHER_APP_KEY="${PUSHER_APP_KEY}"
+VITE_PUSHER_APP_CLUSTER="${PUSHER_APP_CLUSTER}"
+# Optional: if using a custom Pusher host/port
+# VITE_PUSHER_HOST=
+# VITE_PUSHER_PORT=
+# VITE_PUSHER_SCHEME=https
+
 DB_CONNECTION=pgsql,mysql
 DB_HOST=your_db_host
 DB_PORT=your_db_port
