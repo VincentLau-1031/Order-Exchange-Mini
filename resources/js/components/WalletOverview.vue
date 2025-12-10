@@ -45,7 +45,27 @@
 
             <!-- Asset Balances -->
             <div class="space-y-3">
-                <h3 class="text-sm font-medium text-gray-700">Assets</h3>
+                <div class="flex justify-between items-center">
+                    <h3 class="text-sm font-medium text-gray-700">Assets</h3>
+                    <div class="flex gap-1">
+                        <button
+                            @click="addTestAsset('BTC')"
+                            :disabled="addingAsset"
+                            class="px-2 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            title="Add 1 BTC (Test)"
+                        >
+                            +BTC
+                        </button>
+                        <button
+                            @click="addTestAsset('ETH')"
+                            :disabled="addingAsset"
+                            class="px-2 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            title="Add 1 ETH (Test)"
+                        >
+                            +ETH
+                        </button>
+                    </div>
+                </div>
                 
                 <div
                     v-for="asset in assets"
@@ -79,11 +99,14 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { useAuth } from '../composables/useAuth';
+import { useToast } from '../composables/useToast';
 import api from '../services/api';
 
 const { user, fetchProfile } = useAuth();
+const toast = useToast();
 const loading = ref(false);
 const addingBalance = ref(false);
+const addingAsset = ref(false);
 const profile = ref(null);
 const assets = ref([]);
 
@@ -131,12 +154,33 @@ const addTestBalance = async () => {
         if (response.data.user) {
             profile.value = response.data.user;
             assets.value = response.data.user.assets || [];
+            toast.success('$1,000 added to your account');
         }
     } catch (error) {
         console.error('Failed to add balance:', error);
-        alert('Failed to add balance. Please try again.');
+        toast.error('Failed to add balance. Please try again.');
     } finally {
         addingBalance.value = false;
+    }
+};
+
+const addTestAsset = async (symbol) => {
+    addingAsset.value = true;
+    try {
+        const response = await api.post('/profile/add-asset', {
+            symbol: symbol,
+            amount: 1, // Add 1 BTC or 1 ETH for testing
+        });
+        if (response.data.user) {
+            profile.value = response.data.user;
+            assets.value = response.data.user.assets || [];
+            toast.success(`1 ${symbol} added to your account`);
+        }
+    } catch (error) {
+        console.error('Failed to add asset:', error);
+        toast.error(`Failed to add ${symbol}. Please try again.`);
+    } finally {
+        addingAsset.value = false;
     }
 };
 

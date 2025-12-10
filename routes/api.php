@@ -56,6 +56,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('api.profile');
     Route::post('/profile/add-balance', [ProfileController::class, 'addBalance'])->name('api.profile.add-balance');
+    Route::post('/profile/add-asset', [ProfileController::class, 'addAsset'])->name('api.profile.add-asset');
 
     Route::middleware('throttle:60,1')->group(function () {
         Route::get('/orders', [OrderController::class, 'index'])->name('api.orders.index');

@@ -22,6 +22,7 @@ class ProfileController extends Controller
 
     /**
      * POST /api/profile/add-balance
+     * Add balance to user's account (for testing purposes)
      */
     public function addBalance(Request $request): JsonResponse
     {
@@ -42,6 +43,47 @@ class ProfileController extends Controller
 
         return response()->json([
             'message' => 'Balance added successfully',
+            'user' => $user,
+        ]);
+    }
+
+    /**
+     * POST /api/profile/add-asset
+     * Add asset to user's account (for testing purposes)
+     */
+    public function addAsset(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'symbol' => ['required', 'string', 'in:BTC,ETH'],
+            'amount' => ['required', 'numeric', 'min:0.00000001', 'max:1000'],
+        ]);
+
+        $user = $request->user();
+
+        DB::transaction(function () use ($user, $validated) {
+            $asset = \App\Models\Asset::where('user_id', $user->id)
+                ->where('symbol', $validated['symbol'])
+                ->lockForUpdate()
+                ->first();
+
+            if (!$asset) {
+                $asset = \App\Models\Asset::create([
+                    'user_id' => $user->id,
+                    'symbol' => $validated['symbol'],
+                    'amount' => 0,
+                    'locked_amount' => 0,
+                ]);
+            }
+
+            $asset->amount += $validated['amount'];
+            $asset->save();
+        });
+
+        // Reload user with assets
+        $user->refresh()->load('assets');
+
+        return response()->json([
+            'message' => 'Asset added successfully',
             'user' => $user,
         ]);
     }
