@@ -21,6 +21,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'balance',
     ];
 
     /**
@@ -43,6 +44,39 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'balance' => 'decimal:2',
         ];
+    }
+
+    /**
+     * Get the assets for the user.
+     */
+    public function assets()
+    {
+        return $this->hasMany(Asset::class);
+    }
+
+    /**
+     * Get the orders for the user.
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    /**
+     * Get the trades where user is the buyer.
+     */
+    public function buyTrades()
+    {
+        return $this->hasMany(Trade::class, 'buyer_id');
+    }
+
+    /**
+     * Get the trades where user is the seller.
+     */
+    public function sellTrades()
+    {
+        return $this->hasMany(Trade::class, 'seller_id');
     }
 }
