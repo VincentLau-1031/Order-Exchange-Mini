@@ -98,11 +98,21 @@
             </div>
 
             <!-- Order Summary -->
-            <div v-if="form.price && form.amount" class="bg-gray-50 rounded-md p-3">
+            <div v-if="form.price && form.amount" class="bg-gray-50 rounded-md p-3 space-y-2">
                 <div class="flex justify-between text-sm">
                     <span class="text-gray-600">Total Value:</span>
                     <span class="font-medium text-gray-900">
                         ${{ totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                    </span>
+                </div>
+                <div class="flex justify-between text-xs text-gray-500 pt-1 border-t border-gray-200">
+                    <span>Volume:</span>
+                    <span>{{ form.amount }} {{ form.symbol || '' }}</span>
+                </div>
+                <div v-if="form.side === 'buy'" class="flex justify-between text-xs text-gray-500">
+                    <span>Commission (1.5%):</span>
+                    <span class="text-orange-600">
+                        ${{ commission.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
                     </span>
                 </div>
             </div>
@@ -145,10 +155,12 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useOrders } from '../composables/useOrders';
+import { useToast } from '../composables/useToast';
 
 const emit = defineEmits(['order-created']);
 
 const { createOrder, loading, error: orderError } = useOrders();
+const toast = useToast();
 
 const form = ref({
     symbol: '',
@@ -165,6 +177,13 @@ const totalValue = computed(() => {
         return 0;
     }
     return form.value.price * form.value.amount;
+});
+
+const commission = computed(() => {
+    if (!form.value.price || !form.value.amount || form.value.side !== 'buy') {
+        return 0;
+    }
+    return totalValue.value * 0.015;
 });
 
 const isFormValid = computed(() => {
@@ -195,6 +214,7 @@ const handleSubmit = async () => {
 
         if (result.success) {
             successMessage.value = `Order placed successfully!`;
+            toast.success('Order placed successfully!');
             // Emit event for parent component
             emit('order-created', result.data);
             // Reset form
@@ -210,6 +230,7 @@ const handleSubmit = async () => {
             }, 3000);
         } else {
             error.value = result.error || 'Failed to place order';
+            toast.error(result.error || 'Failed to place order');
         }
     } catch (err) {
         error.value = 'An unexpected error occurred';

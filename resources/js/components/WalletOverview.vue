@@ -28,17 +28,44 @@
         <div v-else class="space-y-4">
             <!-- USD Balance -->
             <div class="border-b pb-4">
-                <div class="flex justify-between items-center">
+                <div class="flex justify-between items-center mb-2">
                     <span class="text-sm font-medium text-gray-600">USD Balance</span>
                     <span class="text-2xl font-bold text-gray-900">
                         ${{ formatCurrency(profile?.balance || 0) }}
                     </span>
                 </div>
+                <button
+                    @click="addTestBalance"
+                    :disabled="addingBalance"
+                    class="w-full mt-2 px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    {{ addingBalance ? 'Adding...' : '+ Add $1,000 (Test)' }}
+                </button>
             </div>
 
             <!-- Asset Balances -->
             <div class="space-y-3">
-                <h3 class="text-sm font-medium text-gray-700">Assets</h3>
+                <div class="flex justify-between items-center">
+                    <h3 class="text-sm font-medium text-gray-700">Assets</h3>
+                    <div class="flex gap-1">
+                        <button
+                            @click="addTestAsset('BTC')"
+                            :disabled="addingAsset"
+                            class="px-2 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            title="Add 1 BTC (Test)"
+                        >
+                            +BTC
+                        </button>
+                        <button
+                            @click="addTestAsset('ETH')"
+                            :disabled="addingAsset"
+                            class="px-2 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            title="Add 1 ETH (Test)"
+                        >
+                            +ETH
+                        </button>
+                    </div>
+                </div>
                 
                 <div
                     v-for="asset in assets"
@@ -54,7 +81,7 @@
                         </span>
                     </div>
                     <div class="flex justify-between text-xs text-gray-500">
-                        <span>Available: {{ formatAmount(asset.available_amount) }}</span>
+                        <span>Available: {{ formatAmount(getAvailableAmount(asset)) }}</span>
                         <span v-if="asset.locked_amount > 0" class="text-orange-600">
                             Locked: {{ formatAmount(asset.locked_amount) }}
                         </span>
@@ -72,9 +99,14 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { useAuth } from '../composables/useAuth';
+import { useToast } from '../composables/useToast';
+import api from '../services/api';
 
 const { user, fetchProfile } = useAuth();
+const toast = useToast();
 const loading = ref(false);
+const addingBalance = ref(false);
+const addingAsset = ref(false);
 const profile = ref(null);
 const assets = ref([]);
 
@@ -90,6 +122,11 @@ const formatAmount = (value) => {
         minimumFractionDigits: 2,
         maximumFractionDigits: 8,
     });
+};
+
+const getAvailableAmount = (asset) => {
+    if (!asset) return 0;
+    return Math.max(0, parseFloat(asset.amount || 0) - parseFloat(asset.locked_amount || 0));
 };
 
 const loadProfile = async () => {
@@ -108,6 +145,45 @@ const loadProfile = async () => {
     }
 };
 
+const addTestBalance = async () => {
+    addingBalance.value = true;
+    try {
+        const response = await api.post('/profile/add-balance', {
+            amount: 1000,
+        });
+        if (response.data.user) {
+            profile.value = response.data.user;
+            assets.value = response.data.user.assets || [];
+            toast.success('$1,000 added to your account');
+        }
+    } catch (error) {
+        console.error('Failed to add balance:', error);
+        toast.error('Failed to add balance. Please try again.');
+    } finally {
+        addingBalance.value = false;
+    }
+};
+
+const addTestAsset = async (symbol) => {
+    addingAsset.value = true;
+    try {
+        const response = await api.post('/profile/add-asset', {
+            symbol: symbol,
+            amount: 1, // Add 1 BTC or 1 ETH for testing
+        });
+        if (response.data.user) {
+            profile.value = response.data.user;
+            assets.value = response.data.user.assets || [];
+            toast.success(`1 ${symbol} added to your account`);
+        }
+    } catch (error) {
+        console.error('Failed to add asset:', error);
+        toast.error(`Failed to add ${symbol}. Please try again.`);
+    } finally {
+        addingAsset.value = false;
+    }
+};
+
 // Watch for user changes (from Pusher events or auth updates)
 watch(user, (newUser) => {
     if (newUser) {
@@ -117,8 +193,12 @@ watch(user, (newUser) => {
 }, { deep: true, immediate: true });
 
 // Expose refresh method for parent components
+const refresh = () => {
+    loadProfile();
+};
+
 defineExpose({
-    refresh: loadProfile,
+    refresh,
 });
 
 onMounted(() => {

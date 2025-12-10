@@ -21,18 +21,19 @@ class OrderController extends Controller
     }
 
     /**
-     * GET /api/orders
+     * GET /api/orders?symbol=BTC
      */
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
 
-        if ($request->boolean('orderbook')) {
+        if ($request->has('orderbook') && $request->get('orderbook') == '1') {
             $query = Order::query()
                 ->where('status', Order::STATUS_OPEN)
                 ->when($request->filled('symbol'), fn ($q) => $q->where('symbol', strtoupper($request->string('symbol'))))
-                ->when($request->filled('side'), fn ($q) => $q->where('side', strtolower($request->side)))
-                ->orderBy('created_at');
+                ->orderBy('side')
+                ->orderBy('price', 'asc')
+                ->orderBy('created_at', 'asc');
         } else {
             $query = Order::query()
                 ->where('user_id', $user->id)
