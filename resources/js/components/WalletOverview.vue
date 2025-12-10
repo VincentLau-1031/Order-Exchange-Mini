@@ -28,12 +28,19 @@
         <div v-else class="space-y-4">
             <!-- USD Balance -->
             <div class="border-b pb-4">
-                <div class="flex justify-between items-center">
+                <div class="flex justify-between items-center mb-2">
                     <span class="text-sm font-medium text-gray-600">USD Balance</span>
                     <span class="text-2xl font-bold text-gray-900">
                         ${{ formatCurrency(profile?.balance || 0) }}
                     </span>
                 </div>
+                <button
+                    @click="addTestBalance"
+                    :disabled="addingBalance"
+                    class="w-full mt-2 px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    {{ addingBalance ? 'Adding...' : '+ Add $1,000 (Test)' }}
+                </button>
             </div>
 
             <!-- Asset Balances -->
@@ -72,9 +79,11 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { useAuth } from '../composables/useAuth';
+import api from '../services/api';
 
 const { user, fetchProfile } = useAuth();
 const loading = ref(false);
+const addingBalance = ref(false);
 const profile = ref(null);
 const assets = ref([]);
 
@@ -105,6 +114,24 @@ const loadProfile = async () => {
         console.error('Failed to load profile:', error);
     } finally {
         loading.value = false;
+    }
+};
+
+const addTestBalance = async () => {
+    addingBalance.value = true;
+    try {
+        const response = await api.post('/profile/add-balance', {
+            amount: 1000,
+        });
+        if (response.data.user) {
+            profile.value = response.data.user;
+            assets.value = response.data.user.assets || [];
+        }
+    } catch (error) {
+        console.error('Failed to add balance:', error);
+        alert('Failed to add balance. Please try again.');
+    } finally {
+        addingBalance.value = false;
     }
 };
 

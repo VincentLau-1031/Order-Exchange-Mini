@@ -55,6 +55,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('api.logout');
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('api.profile');
+    Route::post('/profile/add-balance', [ProfileController::class, 'addBalance'])->name('api.profile.add-balance');
 
     Route::middleware('throttle:60,1')->group(function () {
         Route::get('/orders', [OrderController::class, 'index'])->name('api.orders.index');
