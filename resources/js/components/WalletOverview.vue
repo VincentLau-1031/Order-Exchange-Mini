@@ -61,7 +61,7 @@
                         </span>
                     </div>
                     <div class="flex justify-between text-xs text-gray-500">
-                        <span>Available: {{ formatAmount(asset.available_amount) }}</span>
+                        <span>Available: {{ formatAmount(getAvailableAmount(asset)) }}</span>
                         <span v-if="asset.locked_amount > 0" class="text-orange-600">
                             Locked: {{ formatAmount(asset.locked_amount) }}
                         </span>
@@ -99,6 +99,11 @@ const formatAmount = (value) => {
         minimumFractionDigits: 2,
         maximumFractionDigits: 8,
     });
+};
+
+const getAvailableAmount = (asset) => {
+    if (!asset) return 0;
+    return Math.max(0, parseFloat(asset.amount || 0) - parseFloat(asset.locked_amount || 0));
 };
 
 const loadProfile = async () => {
@@ -144,8 +149,12 @@ watch(user, (newUser) => {
 }, { deep: true, immediate: true });
 
 // Expose refresh method for parent components
+const refresh = () => {
+    loadProfile();
+};
+
 defineExpose({
-    refresh: loadProfile,
+    refresh,
 });
 
 onMounted(() => {

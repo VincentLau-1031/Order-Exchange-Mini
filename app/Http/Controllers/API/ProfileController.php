@@ -10,6 +10,9 @@ use Illuminate\Validation\Rule;
 
 class ProfileController extends Controller
 {
+    /**
+     * GET /api/profile
+     */
     public function show(): JsonResponse
     {
         $user = request()->user()->load('assets');
@@ -19,7 +22,6 @@ class ProfileController extends Controller
 
     /**
      * POST /api/profile/add-balance
-     * Add balance to user's account (for testing purposes)
      */
     public function addBalance(Request $request): JsonResponse
     {

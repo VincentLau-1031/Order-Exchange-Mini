@@ -42,7 +42,10 @@ class MatchingService
             $buyOrder = $order->isBuy() ? $order : $counter;
             $sellOrder = $order->isSell() ? $order : $counter;
 
-            // Commission 1.5% paid by buyer in USD
+            if ($buyOrder->amount != $sellOrder->amount) {
+                return null;
+            }
+
             $volume = $sellOrder->amount * $sellOrder->price;
             $commission = $volume * 0.015;
 

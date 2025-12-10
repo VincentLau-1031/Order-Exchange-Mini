@@ -13,6 +13,16 @@
                     <option value="BTC">BTC</option>
                     <option value="ETH">ETH</option>
                 </select>
+                <!-- Side Filter -->
+                <select
+                    v-model="filters.side"
+                    @change="applyFilters"
+                    class="text-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                >
+                    <option value="">All Sides</option>
+                    <option value="buy">Buy</option>
+                    <option value="sell">Sell</option>
+                </select>
                 <!-- Status Filter -->
                 <select
                     v-model="filters.status"
@@ -143,6 +153,7 @@ const { orders, loading, fetchOrders, cancelOrder } = useOrders();
 
 const filters = ref({
     symbol: '',
+    side: '',
     status: '',
 });
 
@@ -192,6 +203,7 @@ const getStatusClass = (status) => {
 const applyFilters = () => {
     const filterParams = {};
     if (filters.value.symbol) filterParams.symbol = filters.value.symbol;
+    if (filters.value.side) filterParams.side = filters.value.side;
     if (filters.value.status) filterParams.status = filters.value.status;
     fetchOrders(filterParams);
 };
@@ -211,5 +223,14 @@ onMounted(() => {
 watch(orders, () => {
     // Orders are automatically updated via the composable
 }, { deep: true });
+
+// Expose refresh method for parent components
+const refresh = () => {
+    applyFilters();
+};
+
+defineExpose({
+    refresh,
+});
 </script>
 

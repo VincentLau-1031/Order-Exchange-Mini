@@ -50,11 +50,12 @@ class OrderService
         // Lock the user row
         $lockedUser = User::whereKey($user->id)->lockForUpdate()->first();
 
+        // Check if user has sufficient balance for the order
         if ($lockedUser->balance < $cost) {
             throw new RuntimeException('Insufficient USD balance.');
         }
 
-        // Deduct funds
+        // Deduct funds (lock USD for the order)
         $lockedUser->balance -= $cost;
         $lockedUser->save();
 
@@ -89,11 +90,12 @@ class OrderService
             ]);
         }
 
+        // Check if user has sufficient asset balance
         if ($asset->amount < $amount) {
             throw new RuntimeException('Insufficient asset balance.');
         }
 
-        // Move amount to locked
+        // Move amount to locked (lock assets for the order)
         $asset->amount -= $amount;
         $asset->locked_amount += $amount;
         $asset->save();

@@ -132,7 +132,7 @@ const asks = computed(() => {
 const loadOrderbook = async () => {
     loading.value = true;
     try {
-        const response = await api.get(`/orders?symbol=${selectedSymbol.value}`);
+        const response = await api.get(`/orders?symbol=${selectedSymbol.value}&orderbook=1`);
         orders.value = response.data;
     } catch (error) {
         console.error('Failed to load orderbook:', error);
